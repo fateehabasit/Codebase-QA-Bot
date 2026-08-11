@@ -7,6 +7,7 @@ Tested against: OOP-Social-Network-Application (C++/SFML)
 LLM: Groq (llama-3.1-8b-instant) | Vector store: ChromaDB | Embeddings: all-MiniLM-L6-v2
 
 
+Initial Test:
 
 \## Q1: How are memories handled?
 
@@ -70,3 +71,43 @@ LLM: Groq (llama-3.1-8b-instant) | Vector store: ChromaDB | Embeddings: all-Mini
 
 \- Overall: retrieval completeness (Q2) is the clearest, most actionable fix for Course 3 (tune k, chunk size, or chunk-per-function). The Q5 error is more of a precision/prompting issue — worth revisiting once retrieval is tuned, e.g. by instructing the model to describe array behavior (capped vs. resizable) explicitly rather than just naming the type.
 
+
+## Retrieval Improvements Applied Test
+
+Switched from flat 800-char chunking to Parent Document Retriever (small child
+chunks used for matching, whole-file parent chunks returned as context) + 
+cross-encoder reranking (retrieve broad, rerank to top 4) + stricter prompt 
+instructions against behavioral inference. Re-ran all 5 original questions below.
+
+## Q1: How are memories handled?
+**Answer**: Described the Memory class (inherits from Post), its constructor fields, the ShareMemoryByID method that creates and adds memories, Display/DisplayWithComments methods, memory ID generation (prefix "m" + post count), and storage/cleanup via the post manager and user's post list.
+**Correct?** Yes — more complete than the original answer (added ShareMemoryByID and ID generation details not mentioned before).
+**Sources**: Memory.cpp, Memory.h, SocialNetworkApp.cpp, SocialNetworkGUI.cpp
+
+## Q2: How does the SFML GUI get set up and rendered?
+**Answer**: Now correctly includes HandleEvents() and Run() — previously missing entirely. Describes window/font initialization, InputBox/Button/Text object creation, the Draw() rendering flow, and the full GUI loop (Run() calls HandleEvents() then Draw() repeatedly until the window closes).
+**Correct?** Yes — retrieval gap from before is fully resolved.
+**Sources**: InputBox.h, Button.h, SocialNetworkGUI.h
+
+## Q3: How is a new user added to the network?
+**Answer**: Correctly explained that LoadUsers() only loads existing users from Users.txt, and explicitly noted no manual add-user function exists in the codebase. Suggested a possible AddUser() implementation but clearly labeled it as a proposed addition, not existing code.
+**Correct?** Yes — bot again correctly avoided hallucinating a nonexistent function as real.
+**Sources**: SocialNetworkApp.cpp, User.cpp
+
+## Q4: How are user friends handled?
+**Answer**: Described the User** friends array, AddFriend's resize-by-one-and-copy logic, getFriends, getFriendCount, ViewFriendList, and AddFriend's self/null checks.
+**Correct?** Yes
+**Sources**: User.cpp, User.h, SocialNetworkApp.cpp
+
+## Q5: What data structure stores likes and comments?
+**Answer**: Correctly identified likedBy and comments as fixed-size arrays (size 10), and accurately described that AddLike/AddComment return without adding once the array is full. No more incorrect "no fixed capacity" claim.
+**Correct?** Yes — previous factual error fully corrected.
+**Sources**: Post.cpp, Post.h, SocialNetworkApp.h
+
+## Summary
+- 5/5 correct after retrieval improvements (up from 3/5 correct)
+- Root causes identified and fixed:
+  - Q2 gap was a retrieval-completeness issue (chunking split HandleEvents from surrounding context) — fixed by Parent Document Retriever returning whole files as context
+  - Q5 error was a behavioral hallucination from incomplete context — fixed by fuller context + explicit prompt instruction against inferring unstated behavior
+- Q3 continues to demonstrate correct hallucination avoidance (bot distinguishes "codebase doesn't have this" from "here's a suggested addition")
+- Overall: ChromaDB + Parent Document Retriever + cross-encoder reranking + Groq LLM, all 5 test questions passing
