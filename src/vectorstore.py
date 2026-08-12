@@ -1,3 +1,4 @@
+import hashlib
 from langchain_chroma import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_classic.retrievers import ParentDocumentRetriever
@@ -16,6 +17,9 @@ parent_splitter = RecursiveCharacterTextSplitter.from_language(
     language=Language.CPP, chunk_size=3000, chunk_overlap=200
 )
 
+def content_hash(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
 def build_parent_retriever(docs):
     vectorstore = Chroma(
         collection_name="code_chunks",
@@ -28,8 +32,10 @@ def build_parent_retriever(docs):
         vectorstore=vectorstore,
         docstore=store,
         child_splitter=child_splitter,
-        parent_splitter=parent_splitter,
     )
+
+    # Generate deterministic IDs for each parent doc based on its content
+    ids = [content_hash(doc.page_content) for doc in docs]
 
     retriever.add_documents(docs)
     return retriever

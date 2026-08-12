@@ -77,3 +77,6 @@ Switched from flat 800-char chunking to Parent Document Retriever (small child c
   - Q5 error was a behavioral hallucination from incomplete context — fixed by fuller context + explicit prompt instruction against inferring unstated behavior
 - Q3 continues to demonstrate correct hallucination avoidance (bot distinguishes "codebase doesn't have this" from "here's a suggested addition")
 - Overall: ChromaDB + Parent Document Retriever + cross-encoder reranking + Groq LLM, all 5 test questions passing
+
+## Production-readiness note
+Added content-hashed IDs for parent documents, making ingestion idempotent — re-running the pipeline on unchanged files produces identical IDs rather than duplicate entries. This mirrors how production RAG systems (e.g. LangChain's Indexing API) prevent vectorstore bloat and duplicate-chunk retrieval issues on repeated ingestion runs. Full change-detection (updating stale entries when file content changes) would require a persistent record-keeping layer, which was out of scope for this project's size but is the natural next step for a production deployment.
