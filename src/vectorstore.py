@@ -24,9 +24,12 @@ def build_parent_retriever(docs):
     vectorstore = Chroma(
         collection_name="code_chunks",
         embedding_function=embeddings,
-        persist_directory="data/vectorstore"
     )
     store = InMemoryStore()  # holds the parent documents
+
+    # Split parent docs ourselves FIRST, so ids can be generated to match the actual post-split document count.
+    parent_docs = parent_splitter.split_documents(docs)
+    ids = [content_hash(d.page_content) for d in parent_docs]
 
     retriever = ParentDocumentRetriever(
         vectorstore=vectorstore,
@@ -34,8 +37,5 @@ def build_parent_retriever(docs):
         child_splitter=child_splitter,
     )
 
-    # Generate deterministic IDs for each parent doc based on its content
-    ids = [content_hash(doc.page_content) for doc in docs]
-
-    retriever.add_documents(docs)
+    retriever.add_documents(parent_docs, ids=ids) 
     return retriever
