@@ -80,3 +80,12 @@ Switched from flat 800-char chunking to Parent Document Retriever (small child c
 
 ## Production-readiness note
 Added content-hashed IDs for parent documents, making ingestion idempotent — re-running the pipeline on unchanged files produces identical IDs rather than duplicate entries. This mirrors how production RAG systems (e.g. LangChain's Indexing API) prevent vectorstore bloat and duplicate-chunk retrieval issues on repeated ingestion runs. Full change-detection (updating stale entries when file content changes) would require a persistent record-keeping layer, which was out of scope for this project's size but is the natural next step for a production deployment.
+
+## Final Configuration & Debugging Notes
+After the initial retrieval improvements, further iteration surfaced three additional real bugs, each fixed and verified:
+
+1. **Vectorstore/docstore persistence mismatch**: The Chroma vectorstore was configured with `persist_directory` (saved to disk across runs), but the`InMemoryStore` holding parent documents was not — it gets rebuilt fresh on every restart. This caused a regression where a previously-correct answer (SFML GUI / HandleEvents question) started returning incomplete results again, likely due to duplicate or orphaned child chunks accumulating in the persisted vectorstore across multiple runs, with no matching parent-doc entries in the freshly-rebuilt docstore. Fixed by removing `persist_directory` entirely and rebuilding both stores fresh in memory on each run, since the dataset is small enough that this adds negligible startup time.
+2. **Unused parameters bug**: `parent_splitter` and content-hashed `ids` were defined but never actually passed into `ParentDocumentRetriever`/`add_documents`, so a config change silently had no effect. Fixed by explicitly wiring both in.
+3. **ID/document count mismatch**: Generating content-hash IDs from raw documents *before* `ParentDocumentRetriever` internally re-split them caused a `ValueError: Got uneven list of documents and ids`. Fixed by splitting parent documents manually first, then generating IDs from the already-split result, and passing pre-split docs directly to `add_documents()`.
+
+**Final config**: child chunks (300 chars) for matching precision, parent chunks (3000 chars) for LLM context, cross-encoder reranking (top_k=4), content-hashed IDs for idempotent re-ingestion, no disk persistence (avoids vectorstore/docstore consistency issues on restart).
