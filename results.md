@@ -89,3 +89,7 @@ After the initial retrieval improvements, further iteration surfaced three addit
 3. **ID/document count mismatch**: Generating content-hash IDs from raw documents *before* `ParentDocumentRetriever` internally re-split them caused a `ValueError: Got uneven list of documents and ids`. Fixed by splitting parent documents manually first, then generating IDs from the already-split result, and passing pre-split docs directly to `add_documents()`.
 
 **Final config**: child chunks (300 chars) for matching precision, parent chunks (3000 chars) for LLM context, cross-encoder reranking (top_k=4), content-hashed IDs for idempotent re-ingestion, no disk persistence (avoids vectorstore/docstore consistency issues on restart).
+
+## Model migration note
+Groq deprecated llama-3.1-8b-instant (decommissioned August 16, 2026). Migrated to Groq's recommended replacement, openai/gpt-oss-20b. Re-verified all 5 test questions to confirm answer
+quality held up after the swap.
