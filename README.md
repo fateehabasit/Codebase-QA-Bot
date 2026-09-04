@@ -32,7 +32,8 @@ venv\Scripts\activate
 pip install -r requirements.txt
 4. Create a `.env` file with your free Groq API key:
 GROQ_API_KEY=your_key_here
-5. Clone the target codebase into `data/repo`
+5. Clone the target codebase into `data/repo`:GIT 
+Tested with "https://github.com/fateehabasit/OOP-Social-Network-Application"
 6. Run:
 python app.py
 7. Open the local URL shown in the terminal
