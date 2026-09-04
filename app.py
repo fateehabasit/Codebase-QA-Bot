@@ -61,24 +61,46 @@ def answer_question(query, history=None):
     sources = "\n".join(f"- {d.metadata.get('source')}" for d in top_docs)
     return answer, sources
 
-with gr.Blocks(title="Codebase Q&A Bot") as demo:
+custom_css = """
+#ask-btn { border-radius: 8px; font-weight: 600; }
+.gradio-container {
+    max-width: 1500px !important;
+    margin: auto;
+}
+"""
+
+theme = gr.themes.Soft(
+    primary_hue="indigo",
+    secondary_hue="slate",
+    font=[gr.themes.GoogleFont("Inter"), "sans-serif"],
+)
+
+with gr.Blocks(title="Codebase Q&A Bot", theme=theme, css=custom_css) as demo:
     gr.Markdown("# Codebase Q&A Bot")
     gr.Markdown(
         "Ask questions about the **OOP Social Network Application** (C++/SFML) codebase. "
         "Answers are grounded in the actual source code using RAG (retrieval-augmented generation)."
     )
 
-    with gr.Row():
-        query_box = gr.Textbox(
-            label="Your question",
-            placeholder="e.g. How is a new user added to the network?",
-            lines=2
-        )
+    query_box = gr.Textbox(
+       label="Your question",
+       placeholder="e.g. How is a new user added to the network?",
+       lines=2,
+    )
 
-    ask_btn = gr.Button("Ask", variant="primary")
+    ask_btn = gr.Button(
+        "Ask",
+        variant="primary",
+        elem_id="ask-btn"
+    )
 
-    answer_box = gr.Textbox(label="Answer", lines=10)
-    sources_box = gr.Textbox(label="Sources", lines=4)
+    gr.Markdown("---")
+
+    gr.Markdown("## Answer")
+    answer_box = gr.Markdown()
+
+    gr.Markdown("## Sources")
+    sources_box = gr.Markdown()
 
     ask_btn.click(fn=answer_question, inputs=query_box, outputs=[answer_box, sources_box])
     query_box.submit(fn=answer_question, inputs=query_box, outputs=[answer_box, sources_box])
@@ -90,8 +112,10 @@ with gr.Blocks(title="Codebase Q&A Bot") as demo:
             "How are user friends handled?",
             "What data structure stores likes and comments?",
         ],
-        inputs=query_box
+        inputs=query_box,
     )
+
+    gr.Markdown("---\n*Built with LangChain (LCEL), ChromaDB, Groq (gpt-oss-20b), and Gradio*")
 
 if __name__ == "__main__":
     demo.launch()
